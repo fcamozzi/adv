@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Restituição de INSS</title>
+    <style>
+        /* --- GERAL & RESET --- */
+        :root {
+            --color-bg: #f8f9fa;
+            --color-bg-alt: #ffffff;
+            --color-text: #212529;
+            --color-text-muted: #6c757d;
+            --color-primary: #0d6efd;
+            --color-primary-light: #e7f1ff;
+            --color-success: #198754;
+            --color-warning: #ffc107;
+            --color-warning-light: #fff8e1;
+            --color-border: #dee2e6;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --border-radius: 0.5rem;
+        }
+
+        .dark-mode {
+            --color-bg: #121212;
+            --color-bg-alt: #1e1e1e;
+            --color-text: #e0e0e0;
+            --color-text-muted: #888;
+            --color-primary: #4dabf7;
+            --color-primary-light: #2c3e50;
+            --color-success: #4caf50;
+            --color-warning: #fbc02d;
+            --color-warning-light: #332b00;
+            --color-border: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* --- CABEÇALHO E CONTROLES --- */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            color: var(--color-primary);
+            font-size: 2.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--color-text-muted);
+            max-width: 700px;
+            margin: 0.5rem auto 0;
+        }
+        
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--color-bg-alt);
+            padding: 0.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--color-border);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input { display: none; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--color-primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .action-buttons button {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid var(--color-primary);
+            background-color: var(--color-primary);
+            color: white;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-left: 0.5rem;
+        }
+        
+        .action-buttons button:hover {
+            opacity: 0.85;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .action-buttons #reset-button {
+             background-color: transparent;
+             color: var(--color-primary);
+        }
+
+        /* --- PAINEL DE RESULTADOS --- */
+        .summary-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .summary-card {
+            background-color: var(--color-bg-alt);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            color: var(--color-text-muted);
+            font-weight: 500;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .summary-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .summary-card.total-refund .value {
+            color: var(--color-success);
+        }
+
+        /* --- TABELA DA CALCULADORA --- */
+        .table-container {
+            overflow-x: auto;
+            background-color: var(--color-bg-alt);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        th, td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        thead {
+            background-color: var(--color-primary-light);
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text);
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: var(--color-bg);
+        }
+        
+        td.currency, td.number, th.currency, th.number {
+            text-align: right;
+        }
+
+        .input-currency, .input-text {
+            width: 100%;
+            padding: 0.4rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.25rem;
+            background-color: var(--color-bg-alt);
+            color: var(--color-text);
+            text-align: right;
+            font-size: 1rem;
+        }
+        
+        .input-currency:focus, .input-text:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-light);
+        }
+        
+        .output-field {
+            font-weight: 500;
+        }
+        
+        .highlight-excess {
+            background-color: var(--color-warning-light) !important;
+            font-weight: bold;
+        }
+        
+        .highlight-excess .output-field,
+        .highlight-excess .currency {
+            color: var(--color-warning);
+        }
+        
+        /* --- FOOTER --- */
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--color-text-muted);
+        }
+        
+        /* --- ESTILOS DE IMPRESSÃO --- */
+        @media print {
+            body {
+                padding: 0;
+                background-color: #fff;
+                color: #000;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+            header, .controls-container, footer, .summary-panel {
+                display: none;
+            }
+            .table-container {
+                box-shadow: none;
+                border: none;
+                overflow: visible;
+            }
+            table {
+                min-width: 0;
+                font-size: 10pt;
+            }
+             th, td {
+                padding: 4px 8px;
+            }
+            .input-currency, .input-text {
+                border: none;
+                background: transparent;
+                padding: 0;
+                text-align: right;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Calculadora de Restituição de INSS</h1>
+            <p>
+                Insira seus salários brutos ou os valores de INSS já descontados para cada fonte pagadora.
+                A calculadora determinará se houve recolhimento acima do teto e calculará o valor atualizado a ser restituído.
+            </p>
+        </header>
+
+        <div class="controls-container">
+            <div class="theme-switcher">
+                <span>☀️</span>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+                <span>🌙</span>
+            </div>
+            <div class="action-buttons">
+                <button id="reset-button">Limpar e Recomeçar</button>
+                <button id="print-button">Imprimir Relatório</button>
+            </div>
+        </div>
+
+        <div class="summary-panel">
+            <div class="summary-card total-refund">
+                <h3>Total Atualizado a Restituir</h3>
+                <div class="value" id="total-restituicao">R$ 0,00</div>
+            </div>
+            <div class="summary-card">
+                <h3>Meses com Excesso</h3>
+                <div class="value" id="meses-excesso">0</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Mês/Ano</th>
+                        <th colspan="2">Fonte Pagadora A</th>
+                        <th colspan="2">Fonte Pagadora B</th>
+                        <th colspan="2">Fonte Pagadora C</th>
+                        <th rowspan="2" class="currency">Total INSS</th>
+                        <th rowspan="2" class="currency">Teto INSS</th>
+                        <th rowspan="2" class="currency">Excesso</th>
+                        <th rowspan="2" class="number">Índice</th>
+                        <th rowspan="2" class="currency">Valor Atualizado</th>
+                    </tr>
+                    <tr>
+                        <th class="currency">Salário Bruto</th>
+                        <th class="currency">INSS Descontado</th>
+                        <th class="currency">Salário Bruto</th>
+                        <th class="currency">INSS Descontado</th>
+                        <th class="currency">Salário Bruto</th>
+                        <th class="currency">INSS Descontado</th>
+                    </tr>
+                </thead>
+                <tbody id="calculator-body">
+                    <!-- Linhas da tabela serão geradas pelo JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <footer>
+            <p>&copy; 2024. Calculadora desenvolvida como ferramenta de auxílio. Os valores são estimativas e devem ser confirmados com um profissional. Os índices e tetos são baseados em dados públicos.</p>
+        </footer>
+    </div>
+
+    <script>
+    // --- DADOS BRUTOS DA PLANILHA ---
+    const rawData = `
+        Mês/Ano,Fonte Pagadora,Salário Bruto,INSS Descontado,Limite Legal,Atualização,Excesso recolhido,Valor atualizado
+        mai./25,A,,,951.63,1.0000,R$ 0,00,R$ 0,00
+        mai./25,B,,,951.63,,,,,,
+        mai./25,C,,,951.63,,,,,,
+        abr./25,A,,,951.63,1.0048,R$ 0,00,R$ 0,00
+        abr./25,B,,,951.63,,,,,,
+        abr./25,C,,,951.63,,,,,,
+        mar./25,A,,,951.63,1.0099,R$ 0,00,R$ 0,00
+        mar./25,B,,,951.63,,,,,,
+        mar./25,C,,,951.63,,,,,,
+        fev./25,A,,,951.63,1.0149,R$ 0,00,R$ 0,00
+        fev./25,B,,,951.63,,,,,,
+        fev./25,C,,,951.63,,,,,,
+        jan./25,A,,,951.63,1.0249,R$ 0,00,R$ 0,00
+        jan./25,B,,,951.63,,,,,,
+        jan./25,C,,,951.63,,,,,,
+        dez./24,A,,,908.86,1.0298,R$ 0,00,R$ 0,00
+        dez./24,B,,,908.86,,,,,,
+        dez./24,C,,,908.86,,,,,,
+        nov./24,A,,,908.86,1.0332,R$ 0,00,R$ 0,00
+        nov./24,B,,,908.86,,,,,,
+        nov./24,C,,,908.86,,,,,,
+        out./24,A,,,908.86,1.0395,R$ 0,00,R$ 0,00
+        out./24,B,,,908.86,,,,,,
+        out./24,C,,,908.86,,,,,,
+        set./24,A,,,908.86,1.0445,R$ 0,00,R$ 0,00
+        set./24,B,,,908.86,,,,,,
+        set./24,C,,,908.86,,,,,,
+        ago./24,A,,,908.86,1.0430,R$ 0,00,R$ 0,00
+        ago./24,B,,,908.86,,,,,,
+        ago./24,C,,,908.86,,,,,,
+        jul./24,A,,,908.86,1.0457,R$ 0,00,R$ 0,00
+        jul./24,B,,,908.86,,,,,,
+        jul./24,C,,,908.86,,,,,,
+        jun./24,A,,,908.86,1.0484,R$ 0,00,R$ 0,00
+        jun./24,B,,,908.86,,,,,,
+        jun./24,C,,,908.86,,,,,,
+        mai./24,A,,,908.86,1.0532,R$ 0,00,R$ 0,00
+        mai./24,B,,,908.86,,,,,,
+        mai./24,C,,,908.86,,,,,,
+        abr./24,A,,,908.86,1.0571,R$ 0,00,R$ 0,00
+        abr./24,B,,,908.86,,,,,,
+        abr./24,C,,,908.86,,,,,,
+        mar./24,A,,,908.86,1.0591,R$ 0,00,R$ 0,00
+        mar./24,B,,,908.86,,,,,,
+        mar./24,C,,,908.86,,,,,,
+        fev./24,A,,,908.86,1.0677,R$ 0,00,R$ 0,00
+        fev./24,B,,,908.86,,,,,,
+        fev./24,C,,,908.86,,,,,,
+        jan./24,A,,,908.86,1.0737,R$ 0,00,R$ 0,00
+        jan./24,B,,,908.86,,,,,,
+        jan./24,C,,,908.86,,,,,,
+        dez./23,A,,,876.97,1.0796,R$ 0,00,R$ 0,00
+        dez./23,B,,,876.97,,,,,,
+        dez./23,C,,,879.97,,,,,,
+        nov./23,A,,,876.97,1.0807,R$ 0,00,R$ 0,00
+        nov./23,B,,,876.97,,,,,,
+        nov./23,C,,,879.97,,,,,,
+        out./23,A,,,876.97,1.0820,R$ 0,00,R$ 0,00
+        out./23,B,,,876.97,,,,,,
+        out./23,C,,,879.97,,,,,,
+        set./23,A,,,876.97,1.0832,R$ 0,00,R$ 0,00
+        set./23,B,,,876.97,,,,,,
+        set./23,C,,,879.97,,,,,,
+        ago./23,A,,,876.97,1.0854,R$ 0,00,R$ 0,00
+        ago./23,B,,,876.97,,,,,,
+        ago./23,C,,,879.97,,,,,,
+        jul./23,A,,,876.97,1.0844,R$ 0,00,R$ 0,00
+        jul./23,B,,,876.97,,,,,,
+        jul./23,C,,,879.97,,,,,,
+        jun./23,A,,,876.97,1.0833,R$ 0,00,R$ 0,00
+        jun./23,B,,,876.97,,,,,,
+        jun./23,C,,,879.97,,,,,,
+        mai./23,A,,,876.97,1.0872,R$ 0,00,R$ 0,00
+        mai./23,B,,,876.97,,,,,,
+        mai./23,C,,,879.97,,,,,,
+        abr./23,A,,,877.24,1.0930,R$ 0,00,R$ 0,00
+        abr./23,B,,,877.24,,,,,,
+        abr./23,C,,,877.24,,,,,,
+        mar./23,A,,,877.24,1.1000,R$ 0,00,R$ 0,00
+        mar./23,B,,,877.24,,,,,,
+        mar./23,C,,,877.24,,,,,,
+        fev./23,A,,,877.24,1.1084,R$ 0,00,R$ 0,00
+        fev./23,B,,,877.24,,,,,,
+        fev./23,C,,,877.24,,,,,,
+        jan./23,A,,,877.24,1.1135,R$ 0,00,R$ 0,00
+        jan./23,B,,,877.24,,,,,,
+        jan./23,C,,,877.24,,,,,,
+        dez./22,A,,,828.39,1.1212,R$ 0,00,R$ 0,00
+        nov./22,A,,,828.39,1.1255,R$ 0,00,R$ 0,00
+        out./22,A,,,828.39,1.1308,R$ 0,00,R$ 0,00
+        set./22,A,,,828.39,1.1272,R$ 0,00,R$ 0,00
+        ago./22,A,,,828.39,1.1237,R$ 0,00,R$ 0,00
+        jul./22,A,,,828.39,1.1169,R$ 0,00,R$ 0,00
+        jun./22,A,,,828.39,1.1238,R$ 0,00,R$ 0,00
+        mai./22,A,,,828.39,1.1289,R$ 0,00,R$ 0,00
+        abr./22,A,,,828.39,1.1406,R$ 0,00,R$ 0,00
+        mar./22,A,,,828.39,1.1602,R$ 0,00,R$ 0,00
+        fev./22,A,,,828.39,1.1718,R$ 0,00,R$ 0,00
+        jan./22,A,,,828.39,1.1796,R$ 0,00,R$ 0,00
+        dez./21,A,,,751.99,1.1882,R$ 0,00,R$ 0,00
+        nov./21,A,,,751.99,1.1982,R$ 0,00,R$ 0,00
+        out./21,A,,,751.99,1.2121,R$ 0,00,R$ 0,00
+        set./21,A,,,751.99,1.2266,R$ 0,00,R$ 0,00
+        ago./21,A,,,751.99,1.2374,R$ 0,00,R$ 0,00
+        jul./21,A,,,751.99,1.2501,R$ 0,00,R$ 0,00
+        jun./21,A,,,751.99,1.2576,R$ 0,00,R$ 0,00
+        mai./21,A,,,751.99,1.2696,R$ 0,00,R$ 0,00
+        abr./21,A,,,751.99,1.2854,R$ 0,00,R$ 0,00
+        mar./21,A,,,751.99,1.2960,R$ 0,00,R$ 0,00
+        jan./21,A,,,713.1,1.3184,R$ 0,00,R$ 0,00
+        dez./20,A,,,713.1,1.3310,R$ 0,00,R$ 0,00
+    `;
+
+    // --- LÓGICA DA APLICAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- TABELAS DE CÁLCULO DE INSS (Valores e tetos oficiais) ---
+        const inssTables = {
+            2025: { // Estimativa baseada em 2024, ajustar quando sair a oficial
+                tetoSalarial: 7786.02, tetoContribuicao: 951.63,
+                faixas: [
+                    { ate: 1412.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2666.68, aliquota: 0.09,  deducao: 21.18 },
+                    { ate: 4000.03, aliquota: 0.12,  deducao: 101.18 },
+                    { ate: 7786.02, aliquota: 0.14,  deducao: 181.18 }
+                ]
+            },
+            2024: {
+                tetoSalarial: 7786.02, tetoContribuicao: 908.86,
+                faixas: [
+                    { ate: 1412.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2666.68, aliquota: 0.09,  deducao: 21.18 },
+                    { ate: 4000.03, aliquota: 0.12,  deducao: 101.18 },
+                    { ate: 7786.02, aliquota: 0.14,  deducao: 181.18 }
+                ]
+            },
+            2023: {
+                tetoSalarial: 7507.49, tetoContribuicao: 876.97, // Teto pode variar um pouco, usando o da tabela
+                faixas: [
+                    { ate: 1320.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2571.29, aliquota: 0.09,  deducao: 19.80 },
+                    { ate: 3856.94, aliquota: 0.12,  deducao: 96.94 },
+                    { ate: 7507.49, aliquota: 0.14,  deducao: 174.08 }
+                ]
+            },
+            2022: {
+                tetoSalarial: 7087.22, tetoContribuicao: 828.39,
+                faixas: [
+                    { ate: 1212.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2427.35, aliquota: 0.09,  deducao: 18.18 },
+                    { ate: 3641.03, aliquota: 0.12,  deducao: 91.00 },
+                    { ate: 7087.22, aliquota: 0.14,  deducao: 162.82 }
+                ]
+            },
+            2021: {
+                tetoSalarial: 6433.57, tetoContribuicao: 751.99,
+                faixas: [
+                    { ate: 1100.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2203.48, aliquota: 0.09,  deducao: 16.50 },
+                    { ate: 3305.22, aliquota: 0.12,  deducao: 82.61 },
+                    { ate: 6433.57, aliquota: 0.14,  deducao: 148.72 }
+                ]
+            },
+            2020: { // Antes da reforma da previdência (lógica diferente, simplificado aqui)
+                tetoSalarial: 6101.06, tetoContribuicao: 713.10,
+                faixas: [ // A partir de Mar/2020 mudou. Tabela simplificada.
+                    { ate: 1045.00, aliquota: 0.075, deducao: 0 },
+                    { ate: 2089.60, aliquota: 0.09,  deducao: 15.67 },
+                    { ate: 3134.40, aliquota: 0.12,  deducao: 78.36 },
+                    { ate: 6101.06, aliquota: 0.14,  deducao: 141.05 }
+                ]
+            }
+        };
+
+        const calculatorBody = document.getElementById('calculator-body');
+        const totalRestituicaoEl = document.getElementById('total-restituicao');
+        const mesesExcessoEl = document.getElementById('meses-excesso');
+        let monthlyData = [];
+
+        // --- FUNÇÕES AUXILIARES ---
+        const parseNumber = (str) => {
+            if (typeof str !== 'string') return isNaN(parseFloat(str)) ? 0 : parseFloat(str);
+            return parseFloat(str.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0;
+        };
+
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        };
+
+        // --- FUNÇÃO PRINCIPAL DE CÁLCULO DE INSS ---
+        const calcularINSS = (salario, ano) => {
+            if (salario <= 0) return 0;
+            const table = inssTables[ano] || inssTables[2024]; // Usa 2024 como fallback
+            if (salario > table.tetoSalarial) {
+                return table.tetoContribuicao;
+            }
+            for (const faixa of table.faixas) {
+                if (salario <= faixa.ate) {
+                    return (salario * faixa.aliquota) - faixa.deducao;
+                }
+            }
+            // Caso o salário seja maior que a última faixa (já tratado, mas como segurança)
+            return table.tetoContribuicao;
+        };
+
+        // --- PROCESSAMENTO E GERAÇÃO DA TABELA ---
+        const processAndBuildTable = () => {
+            const lines = rawData.trim().split('\n').slice(1);
+            const groupedData = {};
+
+            lines.forEach(line => {
+                const [mesAno, fonte, , , limite, atualizacao] = line.split(',').map(s => s.trim());
+                if (!mesAno) return;
+                
+                if (!groupedData[mesAno]) {
+                    groupedData[mesAno] = {
+                        mesAno,
+                        limite: parseNumber(limite) || 0,
+                        indice: parseNumber(atualizacao) || 0,
+                    };
+                }
+            });
+            
+            monthlyData = Object.values(groupedData);
+
+            let tableHTML = '';
+            monthlyData.forEach((data, index) => {
+                const { mesAno, limite, indice } = data;
+                const rowId = `row-${index}`;
+                
+                tableHTML += `
+                    <tr id="${rowId}">
+                        <td>${mesAno}</td>
+                        <td><input type="text" class="input-currency salario" id="sal-A-${index}" data-fonte="A" data-index="${index}"></td>
+                        <td><input type="text" class="input-currency inss" id="inss-A-${index}" data-fonte="A" data-index="${index}"></td>
+                        <td><input type="text" class="input-currency salario" id="sal-B-${index}" data-fonte="B" data-index="${index}"></td>
+                        <td><input type="text" class="input-currency inss" id="inss-B-${index}" data-fonte="B" data-index="${index}"></td>
+                        <td><input type="text" class="input-currency salario" id="sal-C-${index}" data-fonte="C" data-index="${index}"></td>
+                        <td><input type="text" class="input-currency inss" id="inss-C-${index}" data-fonte="C" data-index="${index}"></td>
+                        <td class="currency output-field" id="total-inss-${index}">R$ 0,00</td>
+                        <td class="currency">${formatCurrency(limite)}</td>
+                        <td class="currency output-field" id="excesso-${index}">R$ 0,00</td>
+                        <td class="number">${indice.toFixed(4).replace('.',',')}</td>
+                        <td class="currency output-field" id="valor-atualizado-${index}">R$ 0,00</td>
+                    </tr>
+                `;
+            });
+            calculatorBody.innerHTML = tableHTML;
+        };
+        
+        // --- CÁLCULO GERAL E ATUALIZAÇÃO DA UI ---
+        const recalculateAll = () => {
+            let totalGeralAtualizado = 0;
+            let mesesComExcesso = 0;
+
+            monthlyData.forEach((data, index) => {
+                const row = document.getElementById(`row-${index}`);
+                
+                const inssA = parseNumber(document.getElementById(`inss-A-${index}`).value);
+                const inssB = parseNumber(document.getElementById(`inss-B-${index}`).value);
+                const inssC = parseNumber(document.getElementById(`inss-C-${index}`).value);
+
+                const totalINSSMes = inssA + inssB + inssC;
+                const excessoMes = Math.max(0, totalINSSMes - data.limite);
+                const valorAtualizadoMes = excessoMes * data.indice;
+
+                document.getElementById(`total-inss-${index}`).textContent = formatCurrency(totalINSSMes);
+                document.getElementById(`excesso-${index}`).textContent = formatCurrency(excessoMes);
+                document.getElementById(`valor-atualizado-${index}`).textContent = formatCurrency(valorAtualizadoMes);
+                
+                if (excessoMes > 0) {
+                    row.classList.add('highlight-excess');
+                    mesesComExcesso++;
+                } else {
+                    row.classList.remove('highlight-excess');
+                }
+                
+                totalGeralAtualizado += valorAtualizadoMes;
+            });
+
+            totalRestituicaoEl.textContent = formatCurrency(totalGeralAtualizado);
+            mesesExcessoEl.textContent = mesesComExcesso;
+            saveDataToLocalStorage();
+        };
+
+        // --- PERSISTÊNCIA DE DADOS ---
+        const saveDataToLocalStorage = () => {
+            const dataToSave = {};
+            document.querySelectorAll('.input-currency').forEach(input => {
+                if (input.value) {
+                    dataToSave[input.id] = input.value;
+                }
+            });
+            localStorage.setItem('inssCalculatorData', JSON.stringify(dataToSave));
+        };
+
+        const loadDataFromLocalStorage = () => {
+            const savedData = JSON.parse(localStorage.getItem('inssCalculatorData'));
+            if (savedData) {
+                Object.keys(savedData).forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.value = savedData[id];
+                    }
+                });
+            }
+        };
+
+        // --- EVENT HANDLERS ---
+        const handleInputChange = (e) => {
+            const input = e.target;
+            const index = input.dataset.index;
+            const mesAno = monthlyData[index].mesAno;
+            const ano = parseInt(`20${mesAno.split('/')[1]}`);
+            
+            if (input.classList.contains('salario')) {
+                const salario = parseNumber(input.value);
+                const inssCalculado = calcularINSS(salario, ano);
+                const inssInput = document.getElementById(`inss-${input.dataset.fonte}-${index}`);
+                inssInput.value = inssCalculado > 0 ? inssCalculado.toFixed(2).replace('.', ',') : '';
+            }
+            recalculateAll();
+        };
+
+        // --- INICIALIZAÇÃO E EVENT LISTENERS ---
+        processAndBuildTable();
+        loadDataFromLocalStorage();
+        recalculateAll();
+
+        calculatorBody.addEventListener('input', handleInputChange);
+        
+        document.getElementById('reset-button').addEventListener('click', () => {
+            if (confirm('Tem certeza que deseja apagar todos os dados e recomeçar?')) {
+                localStorage.removeItem('inssCalculatorData');
+                window.location.reload();
+            }
+        });
+        
+        document.getElementById('print-button').addEventListener('click', () => {
+            window.print();
+        });
+
+        // Theme switcher
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme');
+
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.checked = true;
+        }
+
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+    });
+    </script>
+</body>
+</html>
